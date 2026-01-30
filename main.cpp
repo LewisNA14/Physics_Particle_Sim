@@ -1,5 +1,5 @@
 /* 
-    FILE: main.ccp
+    FILE: main.cpp
 
     DESCRIPTION:
 
@@ -22,50 +22,26 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
-// Circle Struct
-typedef struct {
-    float x;
-    float y;
-    float r;
-} Circle;
+// Colour variables
+static uint8_t r = 255;
+static uint8_t g = 255;
+static uint8_t b = 255;
 
-// Rectangle Movement and Collisions
-class ObjectMovement
+class Circles
 {
     public:
-    SDL_FRect myRect;
-    
-    // Object Movement
-    float vel_X;  
-    float vel_Y;
-    float gravity;
+    float circle_x;
+    float circle_y;
+    float circle_radius;
 
-    // Reactive Movement
-    
-    // Randomiser
-    
-    
-    uint8_t r, g, b;  // RGB color values
-
-    ObjectMovement() {
-        srand(time(NULL));
-
-        myRect = {100, 100, 50, 50};
-        myRect.x = 200;
-        myRect.y = 10;
-
-        Circle c = {200.0f, 150.0f, 40.0f}; 
-
-        vel_X = (rand() % 1001)-500;           // 100 pixels per second
-        vel_Y = 0.0f;
-        // vel_Z = 0.0f;
-
-        gravity = 98.1f;       // 98.1 Pixels per second to emulate gravity
-        
-        printf("Speed is: %f \n", vel_X);
-
-        randomiseColour();
+    // Circle Initialise
+    Circles() 
+    {
+        circle_x = 300.0f;
+        circle_y = 300.0f;
+        circle_radius = 40.0f;
     }
+    
 
     void DrawCircle(SDL_Renderer *r, int cx, int cy, int radius)
     {
@@ -77,65 +53,115 @@ class ObjectMovement
             }
         }
     }
+};
 
-    // Change Object Colour
-    void randomiseColour() 
+class Rectangles
+{
+    public:
+    SDL_FRect myRect;
+
+    // Rectangle Dimensions
+    Rectangles()
     {
-        r = rand() % 256;  // Random value 0-255
-        g = rand() % 256;
-        b = rand() % 256;
+        myRect = {200, 10, 50, 50};  // x, y, width, height
     }
-    
-    // Updates the position
-    void update(float deltaTime) {
-        
-        // Move
-        myRect.x += vel_X * deltaTime;
+};
 
-        vel_Y += gravity * deltaTime;
-        myRect.y += vel_Y * deltaTime;
+// Define Shape Classes
+static Rectangles* box = NULL;
+static Circles* ball = NULL;
+
+// Change Object Colour
+void randomiseColour() 
+{
+    r = rand() % 256;  // Random value 0-255
+    g = rand() % 256;
+    b = rand() % 256;
+}
+
+// Rectangle Movement and Collisions
+class ObjectMovement
+{
+    public:
+    // Object Movement
+    float vel_X;  
+    float vel_Y;
+    float gravity;
+
+    float* x_pos;  
+    float* y_pos;
+    float width;   
+    float height;
+
+    ObjectMovement(float* x, float* y, float w, float h) {
+        x_pos = x;     // Save the address
+        y_pos = y;
+        width = w;
+        height = h;
+
+        // Initialise velocities
+        srand(time(NULL));
+        vel_X = (rand() % 1001) - 500;
+        vel_Y = 0.0f;
+        gravity = 98.1f;
+        randomiseColour();
+    }
+
+    // Updates the position
+    void update(float deltaTime) 
+    {
+        // Move
+        *x_pos += vel_X * deltaTime;
         
-        // Bounce off edges - LEFT and RIGHT
-        if (myRect.x < 0) 
-        {
-            myRect.x = 0;                       // Push back inside
+        vel_Y += gravity * deltaTime;
+        *y_pos += vel_Y * deltaTime;
+        
+        // Collision with left wall
+        if (*x_pos < 0) {
+            *x_pos = 0;
             vel_X = -vel_X;
             randomiseColour();
         }
-        if (myRect.x + myRect.w > WINDOW_WIDTH) 
-        {
-            myRect.x = WINDOW_WIDTH - myRect.w;  // Push back inside
-            vel_X = -vel_X * 1.2;
+        
+        // Collision with right wall
+        if (*x_pos + width > WINDOW_WIDTH) {
+            *x_pos = WINDOW_WIDTH - width;
+            vel_X = -vel_X;
             randomiseColour();
         }
         
         // Bounce off edges - TOP and BOTTOM
 
         // Top
-        if (myRect.y < 0) 
+        if (*y_pos< 0) 
         {
-            myRect.y = 0;  // Push back inside
-
+            *y_pos = height;      // Push back inside
+            vel_Y = -vel_Y * 0.8f;
             randomiseColour();
         }
 
         // Bottom
-        if (myRect.y + myRect.h > WINDOW_HEIGHT) 
+        if (*y_pos + height > WINDOW_HEIGHT) 
         {
-            myRect.y = WINDOW_HEIGHT - myRect.h;  // Push back inside
-            vel_Y = -vel_Y * 1.0f;
+            *y_pos = WINDOW_HEIGHT - height;  // Push back inside
+            vel_Y = -vel_Y * 0.8f;
             randomiseColour();
         }
     }
 
 };
 
-/* We will use this renderer to draw into this window every frame. */
+
+
+/* We use this renderer to draw into this window every frame. */
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
 
+static ObjectMovement* boxMove = NULL;
+static ObjectMovement* ballMove = NULL;
+
 static uint64_t lastTime = 0;
-static ObjectMovement* box = NULL;  // Add this
+
 
 /* 
     Initilisation Phase
@@ -163,7 +189,16 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     }
     SDL_SetRenderLogicalPresentation(renderer, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
-    box = new ObjectMovement();  // Create the box
+    ball = new Circles();               // Create the ball
+    box =  new Rectangles();            // Creates the box
+
+    boxMove = new ObjectMovement(&box->myRect.x, &box->myRect.y, 
+                            box->myRect.w, box->myRect.h);
+
+    ballMove = new ObjectMovement(&ball->circle_x, 
+                            &ball->circle_y,
+                            ball->circle_radius, 
+                            ball->circle_radius);
 
     // Previous Time 
     lastTime = SDL_GetTicks();
@@ -198,16 +233,18 @@ SDL_AppResult SDL_AppIterate (void *appstate)
     lastTime = now;
     
     // Calling update function
-    box->update(deltaTime);
+    boxMove->update(deltaTime);
+    ballMove->update(deltaTime);
 
     // Clear and draw
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(renderer);
     
-    SDL_SetRenderDrawColor(renderer, box->r, box->g, box->b, SDL_ALPHA_OPAQUE);
+    SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
     SDL_RenderRect(renderer, &box->myRect);
 
-    // box->DrawCircle(renderer, &Circle c);
+    SDL_SetRenderDrawColor(renderer, 255, 100, 100, SDL_ALPHA_OPAQUE);
+    ball->DrawCircle(renderer, ball->circle_x, ball->circle_y, ball->circle_radius);
     
     SDL_RenderPresent(renderer);
     return SDL_APP_CONTINUE;
@@ -216,5 +253,22 @@ SDL_AppResult SDL_AppIterate (void *appstate)
 /* This function runs once at shutdown. */
 void SDL_AppQuit(void *appstate, SDL_AppResult result)
 {
+    // Clean up allocated memory
+    if (ball) {
+        delete ball;
+        ball = NULL;
+    }
+    if (box) {
+        delete box;
+        box = NULL;
+    }
+    if (ballMove) {
+        delete ballMove;
+        ballMove = NULL;
+    }
+    if (boxMove) {
+        delete boxMove;
+        boxMove = NULL;
+    }
     /* SDL will clean up the window/renderer for us. */
 }
