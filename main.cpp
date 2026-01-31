@@ -15,6 +15,7 @@
 
 #define SDL_MAIN_USE_CALLBACKS 1  /* use the callbacks instead of main() */
 
+// App Window Screen size
 #define WINDOW_WIDTH    600
 #define WINDOW_HEIGHT   600
 
@@ -27,6 +28,11 @@ static uint8_t r = 255;
 static uint8_t g = 255;
 static uint8_t b = 255;
 
+/* =======================================================================
+   Object Classes
+==========================================================================*/
+
+/* Circle Object Class */
 class Circles
 {
     public:
@@ -45,25 +51,45 @@ class Circles
 
     void DrawCircle(SDL_Renderer *r, int cx, int cy, int radius)
     {
-        for (int y = -radius; y <= radius; y++) {
-            for (int x = -radius; x <= radius; x++) {
-                if (x*x + y*y <= radius*radius) {
-                    SDL_RenderPoint(r, cx + x, cy + y);
+        for (int y = -radius; y <= radius; y++) 
+        {
+            for (int x = -radius; x <= radius; x++) 
+            {
+                if (x*x + y*y <= radius*radius) 
+                {
+                    SDL_RenderPoint(r, (float)(cx + x), (float)(cy + y));
                 }
             }
         }
     }
 };
 
+/* Rectangle Object Class */
 class Rectangles
 {
-    public:
-    SDL_FRect myRect;
+public:
+    float rect_x;
+    float rect_y;
+    float rect_w;
+    float rect_h;
 
-    // Rectangle Dimensions
     Rectangles()
     {
-        myRect = {200, 10, 50, 50};  // x, y, width, height
+        rect_x = 225;
+        rect_y = 35; 
+        rect_w = 25;
+        rect_h = 25;
+    }
+    
+    void DrawRectangle(SDL_Renderer *r, int rx, int ry, int rw, int rh)
+    {
+        for (int y = -rh; y <= rh; y++)
+        {
+            for(int x = -rw; x <= rw; x++)
+            {
+                SDL_RenderPoint(r, (float)(rx + x), (float)(ry + y));         
+            }
+        }
     }
 };
 
@@ -79,7 +105,6 @@ void randomiseColour()
     b = rand() % 256;
 }
 
-// Rectangle Movement and Collisions
 class ObjectMovement
 {
     public:
@@ -116,18 +141,19 @@ class ObjectMovement
         vel_Y += gravity * deltaTime;
         *y_pos += vel_Y * deltaTime;
         
+        
         // Collision with left wall
-        if (*x_pos < 0) {
-            *x_pos = 0;
+        if (*x_pos - width < 0.0) 
+        {
+            *x_pos = 0 + width;
             vel_X = -vel_X;
-            randomiseColour();
         }
         
         // Collision with right wall
-        if (*x_pos + width > WINDOW_WIDTH) {
+        if (*x_pos + width > WINDOW_WIDTH) 
+        {
             *x_pos = WINDOW_WIDTH - width;
             vel_X = -vel_X;
-            randomiseColour();
         }
         
         // Bounce off edges - TOP and BOTTOM
@@ -137,7 +163,6 @@ class ObjectMovement
         {
             *y_pos = height;      // Push back inside
             vel_Y = -vel_Y * 0.8f;
-            randomiseColour();
         }
 
         // Bottom
@@ -145,13 +170,22 @@ class ObjectMovement
         {
             *y_pos = WINDOW_HEIGHT - height;  // Push back inside
             vel_Y = -vel_Y * 0.8f;
-            randomiseColour();
         }
     }
 
+    // void Collision(bool col_x, bool col_y)
+    // {
+    //     if (col_y == true)
+    //     {
+    //         vel_Y = -vel_Y;
+    //     }
+    //     else if (col_x)
+    //     {
+    //         vel_X = -vel_X;
+    //     }
+    // }
+
 };
-
-
 
 /* We use this renderer to draw into this window every frame. */
 static SDL_Window *window = NULL;
@@ -162,16 +196,14 @@ static ObjectMovement* ballMove = NULL;
 
 static uint64_t lastTime = 0;
 
+static bool collision_x = false;
+static bool collision_y = false;
 
-/* 
-    Initilisation Phase
+/* =======================================================================
+Function: SDL_AppInit
 
-    CLASS: SDL_AppResult
-
-    FUNCTIONS: 
-    - SDL_AppInit
-    - SDL_AppEvent
-*/
+Description: Initialises all of the variables needed in the main loop
+==========================================================================*/
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
@@ -189,11 +221,13 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     }
     SDL_SetRenderLogicalPresentation(renderer, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
-    ball = new Circles();               // Create the ball
     box =  new Rectangles();            // Creates the box
-
-    boxMove = new ObjectMovement(&box->myRect.x, &box->myRect.y, 
-                            box->myRect.w, box->myRect.h);
+    ball = new Circles();               // Create the ball
+    
+    boxMove = new ObjectMovement(&box->rect_x, 
+                            &box->rect_y, 
+                            box->rect_w, 
+                            box->rect_h);
 
     ballMove = new ObjectMovement(&ball->circle_x, 
                             &ball->circle_y,
@@ -206,8 +240,14 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
 
+/* =======================================================================
+Function: SDL_AppEvent
 
-/* This function runs when a new event (mouse input, keypresses, etc) occurs. */
+Parameters: appstate, event
+
+Description: This function runs when a new event (mouse input, keypresses, etc) occurs. 
+==========================================================================*/
+
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 {
     if (event->type == SDL_EVENT_QUIT) {
@@ -216,15 +256,12 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
 
-/* 
-    Main Function Loop
+/* =======================================================================
+Function: SDL_AppIterate
 
-    CLASSES: SDL_AppIterate
-
-    FUNCTIONS:
-    - SDL_AppIterate
-
-*/
+Description: Acts as the main iterative loop of code for the system.
+    It renders the objects as well as calls the movement update function etc.
+==========================================================================*/
 SDL_AppResult SDL_AppIterate (void *appstate)
 {
     // Time-keeping
@@ -241,16 +278,40 @@ SDL_AppResult SDL_AppIterate (void *appstate)
     SDL_RenderClear(renderer);
     
     SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
-    SDL_RenderRect(renderer, &box->myRect);
+    box->DrawRectangle(renderer, box->rect_x, box->rect_y, box->rect_w, box->rect_h);
 
     SDL_SetRenderDrawColor(renderer, 255, 100, 100, SDL_ALPHA_OPAQUE);
     ball->DrawCircle(renderer, ball->circle_x, ball->circle_y, ball->circle_radius);
+
+    // Checking Collisions
+    /* if (((box->rect_x + box->rect_w) >= (ball->circle_x - ball->circle_radius)) || 
+    ((box->rect_x - box->rect_w) >= (ball->circle_x + ball->circle_radius)))
+    {
+        collision_x = true;
+        boxMove->Collision(collision_x, collision_y);
+        ballMove->Collision(collision_x, collision_y);
+        collision_x = false;
+    }
+
+    if (((box->rect_y + box->rect_w) >= (ball->circle_y - ball->circle_radius)) ||
+    ((box->rect_x - box->rect_w) >= (ball->circle_x + ball->circle_radius)))
+    {
+        collision_y = true;
+        boxMove->Collision(collision_x, collision_y);
+        ballMove->Collision(collision_x, collision_y);
+        collision_y = false;
+    } */
     
     SDL_RenderPresent(renderer);
     return SDL_APP_CONTINUE;
 }
 
-/* This function runs once at shutdown. */
+/* =======================================================================
+Function: SDL_AppQuit
+
+Description: Performs the garbage collection for the process, cleaning up
+allocated memory
+==========================================================================*/
 void SDL_AppQuit(void *appstate, SDL_AppResult result)
 {
     // Clean up allocated memory
