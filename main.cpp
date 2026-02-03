@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
+#include <math.h>
 
 #define SDL_MAIN_USE_CALLBACKS 1  /* use the callbacks instead of main() */
 
@@ -29,8 +30,8 @@ static uint8_t g = 255;
 static uint8_t b = 255;
 
 /* =======================================================================
-   Object Classes
-==========================================================================*/
+/*   Object Classes
+/* =======================================================================*/
 
 /* Circle Object Class */
 class Circles
@@ -40,14 +41,20 @@ class Circles
     float circle_y;
     float circle_radius;
 
+    // Contact Points
+    float circle_left;
+    float circle_right;
+    float circle_top;
+    float circle_bottom;
+
     // Circle Initialise
     Circles() 
     {
         circle_x = 300.0f;
         circle_y = 300.0f;
         circle_radius = 40.0f;
+
     }
-    
 
     void DrawCircle(SDL_Renderer *r, int cx, int cy, int radius)
     {
@@ -113,10 +120,17 @@ class ObjectMovement
     float vel_Y;
     float gravity;
 
+    // Object Positions
     float* x_pos;  
     float* y_pos;
     float width;   
     float height;
+
+    // Contact Points
+    float topContact;   
+    float bottomContact;
+    float leftContact; 
+    float rightContact;
 
     ObjectMovement(float* x, float* y, float w, float h) {
         x_pos = x;     // Save the address
@@ -125,66 +139,67 @@ class ObjectMovement
         height = h;
 
         // Initialise velocities
-        srand(time(NULL));
         vel_X = (rand() % 1001) - 500;
         vel_Y = 0.0f;
         gravity = 98.1f;
+
+        srand(time(NULL));
         randomiseColour();
+    }
+
+    void updateContactPoints() 
+    {
+        topContact        = *y_pos - height;
+        bottomContact     = *y_pos + height;
+        leftContact       = *x_pos - width;
+        rightContact      = *x_pos + width;
     }
 
     // Updates the position
     void update(float deltaTime) 
     {
         // Move
-        *x_pos += vel_X * deltaTime;
+        *x_pos  += vel_X * deltaTime;
         
-        vel_Y += gravity * deltaTime;
-        *y_pos += vel_Y * deltaTime;
+        vel_Y   += gravity * deltaTime;
+        *y_pos  += vel_Y * deltaTime;
         
         
         // Collision with left wall
-        if (*x_pos - width < 0.0) 
+        if (leftContact < 0.0) 
         {
-            *x_pos = 0 + width;
-            vel_X = -vel_X;
+            *x_pos  = 0 + width;
+            vel_X   = -vel_X;
         }
         
         // Collision with right wall
-        if (*x_pos + width > WINDOW_WIDTH) 
+        if (rightContact > WINDOW_WIDTH) 
         {
-            *x_pos = WINDOW_WIDTH - width;
-            vel_X = -vel_X;
+            *x_pos  = WINDOW_WIDTH - width;
+            vel_X   = -vel_X;
         }
         
         // Bounce off edges - TOP and BOTTOM
-
         // Top
-        if (*y_pos< 0) 
+        if (topContact < 0) 
         {
-            *y_pos = height;      // Push back inside
-            vel_Y = -vel_Y * 0.8f;
+            *y_pos  = height;      // Push back inside
+            vel_Y   = -vel_Y * 0.8f;
         }
 
         // Bottom
-        if (*y_pos + height > WINDOW_HEIGHT) 
+        if (bottomContact > WINDOW_HEIGHT) 
         {
-            *y_pos = WINDOW_HEIGHT - height;  // Push back inside
-            vel_Y = -vel_Y * 0.8f;
+            *y_pos  = WINDOW_HEIGHT - height;  // Push back inside
+            vel_Y   = -vel_Y * 0.8f;
         }
     }
-
+    
+    // Checking Collisions
     // void Collision(bool col_x, bool col_y)
     // {
-    //     if (col_y == true)
-    //     {
-    //         vel_Y = -vel_Y;
-    //     }
-    //     else if (col_x)
-    //     {
-    //         vel_X = -vel_X;
-    //     }
+        
     // }
-
 };
 
 /* We use this renderer to draw into this window every frame. */
@@ -200,10 +215,100 @@ static bool collision_x = false;
 static bool collision_y = false;
 
 /* =======================================================================
-Function: SDL_AppInit
+/*  Function: HandleCollision
+/*
+/*  Description: 
+/*  
+/*  Handles the collision between objects after checking their positions
+/*  and updating their direction and position accordingly
+/* ========================================================================*/
 
-Description: Initialises all of the variables needed in the main loop
-==========================================================================*/
+void HandleCollision()
+{
+    // Check if collision exists
+    if ((boxMove->rightContact  >= ballMove->leftContact)   && 
+        (boxMove->leftContact   <= ballMove->rightContact)  &&
+        (boxMove->bottomContact >= ballMove->topContact)    &&
+        (boxMove->topContact    <= ballMove->bottomContact))
+    {
+        // Calculating when the two objects collide
+        float overlapLeft   = boxMove->leftContact - ballMove->rightContact;
+        float overlapRight  = boxMove->rightContact - ballMove->leftContact;
+        float overlapTop    = boxMove->topContact - ballMove->bottomContact;
+        float overlapBottom = boxMove->bottomContact - ballMove->topContact;
+        
+        // Find minimum overlap to determine collision axis
+        float minOverlapX = (overlapLeft < overlapRight) ? overlapLeft : overlapRight;
+        float minOverlapY = (overlapTop < overlapBottom) ? overlapTop : overlapBottom;
+        
+
+        // Resolve collision based on the axis with least penetration
+        if (minOverlapX < minOverlapY) {
+            // X-axis collision - determine which side
+            if (*ballMove->x_pos < *boxMove->x_pos) {
+                // Ball is on the left, push it left and box right
+                ballMove->vel_X = -abs(ballMove->vel_X);
+                boxMove->vel_X = abs(boxMove->vel_X);
+            } else {
+                // Ball is on the right, push it right and box left
+                ballMove->vel_X = abs(ballMove->vel_X);
+                boxMove->vel_X = -abs(boxMove->vel_X);
+            }
+            
+            // Separate the objects to prevent sticking
+            float separation = minOverlapX / 2.0f;
+            if (*ballMove->x_pos < *boxMove->x_pos) 
+            {
+                *ballMove->x_pos -= separation;
+                *boxMove->x_pos += separation;
+            } 
+            else 
+            {
+                *ballMove->x_pos += separation;
+                *boxMove->x_pos -= separation;
+            }
+        } 
+        else 
+        {
+            // Y-axis collision - determine which side
+            if (*ballMove->y_pos < *boxMove->y_pos) 
+            {
+                // Ball is above, push it up and box down
+                ballMove->vel_Y = -abs(ballMove->vel_Y) * 0.8f;
+                boxMove->vel_Y = abs(boxMove->vel_Y) * 0.8f;
+            } 
+            else 
+            {
+                // Ball is below, push it down and box up
+                ballMove->vel_Y = abs(ballMove->vel_Y) * 0.8f;
+                boxMove->vel_Y = -abs(boxMove->vel_Y) * 0.8f;
+            }
+            
+            // Separate the objects to prevent sticking
+            float separation = minOverlapY / 2.0f;
+            if (*ballMove->y_pos < *boxMove->y_pos) 
+            {
+                *ballMove->y_pos -= separation;
+                *boxMove->y_pos += separation;
+            } 
+            else 
+            {
+                *ballMove->y_pos += separation;
+                *boxMove->y_pos -= separation;
+            }
+        }
+
+        // Update contact points for both objects
+        boxMove->updateContactPoints();
+        ballMove->updateContactPoints();
+    }
+}
+
+/* =======================================================================
+/*  Function: SDL_AppInit
+/*
+/*  Description: Initialises all of the variables needed in the main loop
+/* ========================================================================*/
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
@@ -241,12 +346,14 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 }
 
 /* =======================================================================
-Function: SDL_AppEvent
-
-Parameters: appstate, event
-
-Description: This function runs when a new event (mouse input, keypresses, etc) occurs. 
-==========================================================================*/
+/*  Function: SDL_AppEvent
+/*
+/*  Parameters: appstate, event
+/*
+/*  Description: 
+/*    
+/*  This function runs when a new event (mouse input, keypresses, etc) occurs. 
+/* ========================================================================*/
 
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 {
@@ -257,21 +364,31 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 }
 
 /* =======================================================================
-Function: SDL_AppIterate
-
-Description: Acts as the main iterative loop of code for the system.
-    It renders the objects as well as calls the movement update function etc.
-==========================================================================*/
+/*  Function: SDL_AppIterate
+/*
+/*  Description: 
+/*    
+/*  Acts as the main iterative loop of code for the system.
+/*  It renders the objects as well as calls the movement update function etc.
+/*==========================================================================*/
 SDL_AppResult SDL_AppIterate (void *appstate)
 {
+    
     // Time-keeping
     uint64_t now = SDL_GetTicks();
     float deltaTime = (now - lastTime) / 1000.0f;  
     lastTime = now;
     
-    // Calling update function
+    // Update physics first
     boxMove->update(deltaTime);
     ballMove->update(deltaTime);
+    
+    // Then update contact points
+    boxMove->updateContactPoints();
+    ballMove->updateContactPoints();
+
+    // Check and handle collisions
+    HandleCollision();
 
     // Clear and draw
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
@@ -282,35 +399,17 @@ SDL_AppResult SDL_AppIterate (void *appstate)
 
     SDL_SetRenderDrawColor(renderer, 255, 100, 100, SDL_ALPHA_OPAQUE);
     ball->DrawCircle(renderer, ball->circle_x, ball->circle_y, ball->circle_radius);
-
-    // Checking Collisions
-    /* if (((box->rect_x + box->rect_w) >= (ball->circle_x - ball->circle_radius)) || 
-    ((box->rect_x - box->rect_w) >= (ball->circle_x + ball->circle_radius)))
-    {
-        collision_x = true;
-        boxMove->Collision(collision_x, collision_y);
-        ballMove->Collision(collision_x, collision_y);
-        collision_x = false;
-    }
-
-    if (((box->rect_y + box->rect_w) >= (ball->circle_y - ball->circle_radius)) ||
-    ((box->rect_x - box->rect_w) >= (ball->circle_x + ball->circle_radius)))
-    {
-        collision_y = true;
-        boxMove->Collision(collision_x, collision_y);
-        ballMove->Collision(collision_x, collision_y);
-        collision_y = false;
-    } */
     
     SDL_RenderPresent(renderer);
     return SDL_APP_CONTINUE;
 }
 
 /* =======================================================================
-Function: SDL_AppQuit
+/* Function: SDL_AppQuit
 
-Description: Performs the garbage collection for the process, cleaning up
-allocated memory
+/* Description: 
+/* Performs the garbage collection for the process, cleaning up
+/* allocated memory
 ==========================================================================*/
 void SDL_AppQuit(void *appstate, SDL_AppResult result)
 {
