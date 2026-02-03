@@ -6,8 +6,6 @@
   <a href="#introduction">Introduction</a> •
   <a href="#project-progress">Project Progress</a> •
   <a href="#challenges">Challenges</a> •
-  <a href="#future-work">Future Work</a> •
-  <a href="#build">Build</a>
 </p>
 
 ---
@@ -37,38 +35,32 @@ hands-on experience with engine-style architecture.
 - Basic collision response
 
 ### Demo
-
+![Demo](Box_Ball_Physics_Sim_nocollision.gif)
 
 ### Planned Features
 
+- Proper circle-to-circle collision
+- Rotational dynamics and torque
+- Friction simulation
+- Spatial partitioning for performance
+- Configurable simulation parameters via UI
+
+---
+
 ## Challenges
-One of the initial challenges was becoming familiar with the SDL3 API and its
-core structures, such as rendering contexts and rectangle primitives. Early
-development focused on understanding the event loop and rendering pipeline,
-with the first milestone being the successful creation of a basic window and
-rendered object.
 
-A significant learning curve involved transitioning from procedural C-style
-programming to object-oriented design in C++. This required developing an
-understanding of class structure, constructors and destructors, access
-specifiers, and object interactions. Adopting a more modular and encapsulated
-design approach represented a major shift from previous development patterns.
+- **Learning SDL3:** Understanding rendering contexts, window creation, and the event loop. First milestone was successfully rendering a single object on-screen.  
+- **Object-Oriented Design:** Transitioning from procedural C to C++ classes. Learned constructors, public/private access, and modular design principles.  
+- **Collision Detection:** Early debugging used dynamic color changes for visual feedback. Implementing robust collision detection required careful handling of object bounds.  
+- **Velocity & Gravity:** Added frame-rate independent motion in both axes. Simulated gravity using:
 
-Implementing collision detection introduced further complexity. Early versions
-used simple visual feedback, including dynamic colour changes (love flashing colours), to assist with
-debugging collision events and validating behaviour during testing.
-
-Extending movement beyond a single axis required introducing velocity-based
-motion in both the x and y directions. This was followed by the implementation
-of gravity and basic energy loss to simulate realistic bouncing behaviour.
-
-Vertical motion was modelled using time-based integration:
-```bash
-vel_y += gravity * deltaTime
+```cpp
+vel_y += gravity * deltaTime;
 ```
-and bounce damping was introduced using a restitution factor:
-```bash
-vel_y = -vel_y * 0.8
+and energy loss for bounces:
+```cpp
+vel_y = -vel_y * 0.8;
 ```
-Balancing stability, realism, and performance during these stages required
-iterative testing and refinement.
+- **Ball Creation:** Beyond creating the loop for the ball, I needed to account for its center-based coordinates rather than SDL's rectangle-based edge coordinates. This required adding or subtracting the radius for the top, bottom, left, and right boundaries. The same approach was applied to the rectangle, replacing radius with width and height.
+
+- **Universal Movement Class:** Instead of separate movement variables for each shape, I created ObjectMovement as a universal class that can handle any shape. This reduced code duplication and made physics updates consistent across objects.
