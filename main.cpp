@@ -242,62 +242,6 @@ void HandleCollision()
         float minOverlapY = (overlapTop < overlapBottom) ? overlapTop : overlapBottom;
         
 
-        // Resolve collision based on the axis with least penetration
-        if (minOverlapX < minOverlapY) {
-            // X-axis collision - determine which side
-            if (*ballMove->x_pos < *boxMove->x_pos) {
-                // Ball is on the left, push it left and box right
-                ballMove->vel_X = -abs(ballMove->vel_X);
-                boxMove->vel_X = abs(boxMove->vel_X);
-            } else {
-                // Ball is on the right, push it right and box left
-                ballMove->vel_X = abs(ballMove->vel_X);
-                boxMove->vel_X = -abs(boxMove->vel_X);
-            }
-            
-            // Separate the objects to prevent sticking
-            float separation = minOverlapX / 2.0f;
-            if (*ballMove->x_pos < *boxMove->x_pos) 
-            {
-                *ballMove->x_pos -= separation;
-                *boxMove->x_pos += separation;
-            } 
-            else 
-            {
-                *ballMove->x_pos += separation;
-                *boxMove->x_pos -= separation;
-            }
-        } 
-        else 
-        {
-            // Y-axis collision - determine which side
-            if (*ballMove->y_pos < *boxMove->y_pos) 
-            {
-                // Ball is above, push it up and box down
-                ballMove->vel_Y = -abs(ballMove->vel_Y) * 0.8f;
-                boxMove->vel_Y = abs(boxMove->vel_Y) * 0.8f;
-            } 
-            else 
-            {
-                // Ball is below, push it down and box up
-                ballMove->vel_Y = abs(ballMove->vel_Y) * 0.8f;
-                boxMove->vel_Y = -abs(boxMove->vel_Y) * 0.8f;
-            }
-            
-            // Separate the objects to prevent sticking
-            float separation = minOverlapY / 2.0f;
-            if (*ballMove->y_pos < *boxMove->y_pos) 
-            {
-                *ballMove->y_pos -= separation;
-                *boxMove->y_pos += separation;
-            } 
-            else 
-            {
-                *ballMove->y_pos += separation;
-                *boxMove->y_pos -= separation;
-            }
-        }
-
         // Update contact points for both objects
         boxMove->updateContactPoints();
         ballMove->updateContactPoints();
