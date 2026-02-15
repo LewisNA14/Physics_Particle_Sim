@@ -1,18 +1,17 @@
 CXX = g++
 CXXFLAGS = -Wall -Wextra -O2
-
 TARGET = main
 SRCS = main.cpp
+HEADERS = physics.h
 
 # SDL package name for pkg-config
 PKGS = sdl3
-
 CFLAGS := $(shell pkg-config --cflags $(PKGS))
 LIBS   := $(shell pkg-config --libs $(PKGS))
 
 all: $(TARGET)
 
-$(TARGET): $(SRCS)
+$(TARGET): $(SRCS) $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(SRCS) $(CFLAGS) -o $(TARGET) $(LIBS)
 
 run: $(TARGET)

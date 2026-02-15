@@ -9,16 +9,52 @@
 
 // Standard Libraries
 #include <gtest/gtest.h>
-#include "../physics.h" 
+#include "../physics.h"
 
-TEST(ContactPoints, CalculatesCorrectEdges) {
-    float x = 100.0f, y = 100.0f;
+ContactPoints contact;
+PositionVar pos;
+
+
+/*--------------------------------------------------------------------------------
+    ObjectMovement Tests
+----------------------------------------------------------------------------------*/
+    TEST(ObjMoveTest, ContactPoints)
+{
+    float x = 100.0f;
+    float y = 100.0f;
+
     ObjectMovement obj(&x, &y, 10.0f, 10.0f);
-
     obj.updateContactPoints();
 
-    EXPECT_FLOAT_EQ(obj.leftContact,    90.0f);
-    EXPECT_FLOAT_EQ(obj.rightContact,  110.0f);
-    EXPECT_FLOAT_EQ(obj.topContact,     90.0f);
-    EXPECT_FLOAT_EQ(obj.bottomContact, 110.0f);
+    EXPECT_FLOAT_EQ(obj.contact.leftContact,    90.0f);
+    EXPECT_FLOAT_EQ(obj.contact.rightContact,   110.0f);
+    EXPECT_FLOAT_EQ(obj.contact.topContact,     90.0f);
+    EXPECT_FLOAT_EQ(obj.contact.bottomContact,  110.0f);
 }
+
+TEST(ObjMoveTest, PositionChanges)
+{
+    float x = 100.0f;
+    float y = 100.0f;
+    
+    ObjectMovement obj(&x, &y, 10.0f, 10.0f);
+    obj.pos.vel_X = 50.0f;  // Set known velocity
+    obj.pos.vel_Y = 0.0f;
+    
+    obj.updatePos(1.0f);  // Simulate 1 full second
+    
+    
+    EXPECT_FLOAT_EQ(*obj.pos.x_pos, 150.0f);
+    EXPECT_FLOAT_EQ(*obj.pos.y_pos, 100.0981f); // This is due to gravity.
+}
+
+
+/*------------------------------------------------------------------------------
+*   Collision Tests
+------------------------------------------------------------------------------*/
+
+TEST(CollisionTest, )
+{
+    
+}
+
