@@ -104,12 +104,14 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     boxMove  = new ObjectMovement(&box->rect_x, 
                             &box->rect_y, 
                             box->rect_w, 
-                            box->rect_h);
+                            box->rect_h,
+                            box->rect_mass);
 
     ballMove = new ObjectMovement(&ball->circle_x, 
                             &ball->circle_y,
                             ball->circle_radius, 
-                            ball->circle_radius);
+                            ball->circle_radius,
+                            ball->c_mass);
 
     collisionSystem = new Collisions();
     // Previous Time 
