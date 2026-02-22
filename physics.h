@@ -96,11 +96,9 @@ public:
     }
 };
 
-
 // Define Shape Classes
 static Rectangles* box = NULL;
 static Circles* ball = NULL;
-
 
 // Colour variables
 static uint8_t r = 255;
@@ -214,10 +212,8 @@ class Collisions
             // Determine which axis has minimum overlap
             float absOverlapX = (overlapLeft < 0) ? -overlapLeft : overlapRight;
             float absOverlapY = (overlapTop < 0) ? -overlapTop : overlapBottom;
-            
-            // Calculating the resulting 
 
-            // Resolve on the axis with least penetration
+            // Resolve on the axis with least penetration using Conservation of Momentum and Kinetic Energy
             if (absOverlapX < absOverlapY) 
             {
                 // X-axis collision
