@@ -40,6 +40,11 @@ hands-on experience with engine-style architecture.
 #### Early Stages of Development (Dec-Jan 2025-2026)
 ![Demo](Box_Ball_Physics_Sim_nocollision.gif)
 
+#### Current Stage of Development (Jan - Present 2026)
+![Demo](Phys_sim_mass_force_demo.gif)
+
+As you can see there's still some issues around the circle contacting the box as the box somewhat phases through slightly before popping out. 
+I beleive it may be an issue with the overlap handling where the system has a hard time handling both x and y plane collisions simultaneously.
 
 
 ### Planned Features
