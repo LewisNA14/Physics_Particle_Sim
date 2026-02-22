@@ -144,7 +144,7 @@ class ObjectMovement
         height      = h;
         mass        = m;
 
-        pos.vel_X   = 150.0f;
+        pos.vel_X   = 200.0f;
         pos.vel_Y   = 0.0f;
         gravity     = 0.0981f;
 
