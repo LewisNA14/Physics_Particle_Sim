@@ -32,6 +32,8 @@ typedef struct{
     float bottomContact;
     float leftContact;
     float rightContact;
+    float force_x;
+    float force_y;
 } ContactPoints;
 
 typedef struct 
@@ -58,8 +60,6 @@ class Circles
     float circle_bottom;
 
     // Physics Var
-    float c_vel_x;
-    float c_vel_y;
     float c_mass;
 
 
@@ -69,6 +69,8 @@ class Circles
         circle_x        = 300.0f;
         circle_y        = 300.0f;
         circle_radius   = 40.0f;
+
+        c_mass = 30.0f;
     }
 };
 
@@ -81,20 +83,22 @@ public:
     float rect_w;
     float rect_h;
 
+    float rect_mass;
+
     Rectangles()
     {
         rect_x = 225;
         rect_y = 35; 
         rect_w = 25;
         rect_h = 25;
+
+        rect_mass = 10;
     }
 };
-
 
 // Define Shape Classes
 static Rectangles* box = NULL;
 static Circles* ball = NULL;
-
 
 // Colour variables
 static uint8_t r = 255;
@@ -128,17 +132,24 @@ class ObjectMovement
     float gravity;
 
     float width;   
-    float height;    
+    float height;  
+    float mass;
+    float force_x;
+    float force_y;
 
-    ObjectMovement(float* x, float* y, float w, float h) {
+    ObjectMovement(float* x, float* y, float w, float h, float m) { 
         pos.x_pos   = x;  
         pos.y_pos   = y;
         width       = w;
         height      = h;
+        mass        = m;
 
-        pos.vel_X   = 100.0f;
+        pos.vel_X   = 150.0f;
         pos.vel_Y   = 0.0f;
         gravity     = 0.0981f;
+
+        contact.force_x     = mass * pos.vel_X;
+        contact.force_y     = mass * pos.vel_Y;
     }
 
     void updateContactPoints() 
@@ -154,7 +165,7 @@ class ObjectMovement
         // Position update over time
         *pos.x_pos  += pos.vel_X * deltaTime;
         
-        pos.vel_Y   += gravity * deltaTime;   
+        pos.vel_Y   += gravity * mass * deltaTime;   
         *pos.y_pos  += pos.vel_Y;
     }
 };
@@ -171,7 +182,9 @@ class ObjectMovement
 
 class Collisions
 {
-public:
+    
+
+    public:
     void CheckObjectCollision(ObjectMovement* obj1, ObjectMovement* obj2)
     {
         // Check if collision exists
@@ -180,28 +193,38 @@ public:
             (obj1->contact.bottomContact >= obj2->contact.topContact)    &&
             (obj1->contact.topContact    <= obj2->contact.bottomContact))
         {
+            // Physics parameters for each object
+            float v1x = obj1->pos.vel_X;
+            float v2x = obj2->pos.vel_X;
+
+            float v1y = obj1->pos.vel_Y;
+            float v2y = obj2->pos.vel_Y;
+
+            float m1  = obj1->mass;
+            float m2  = obj2->mass;            
+
             // Calculating the overlap when the two objects collide
-            float overlapLeft   = obj1->contact.leftContact - obj2->contact.rightContact;
+            float overlapLeft   = obj1->contact.leftContact  - obj2->contact.rightContact;
             float overlapRight  = obj1->contact.rightContact - obj2->contact.leftContact;
-            float overlapTop    = obj1->contact.topContact - obj2->contact.bottomContact;
-            float overlapBottom = obj1->contact.bottomContact - obj2->contact.topContact;
+            float overlapTop    = obj1->contact.topContact   - obj2->contact.bottomContact;
+            float overlapBottom = obj1->contact.bottomContact- obj2->contact.topContact;
             
             // Determine which axis has minimum overlap
             float absOverlapX = (overlapLeft < 0) ? -overlapLeft : overlapRight;
             float absOverlapY = (overlapTop < 0) ? -overlapTop : overlapBottom;
-            
-            // Resolve on the axis with least penetration
+
+            // Resolve on the axis with least penetration using Conservation of Momentum and Kinetic Energy
             if (absOverlapX < absOverlapY) 
             {
                 // X-axis collision
-                obj1->pos.vel_X = -obj1->pos.vel_X;
-                obj2->pos.vel_X = -obj2->pos.vel_X;
+                obj1->pos.vel_X = ((m1 - m2) * v1x + 2 * m2 * v2x) / (m1 + m2);
+                obj2->pos.vel_X = ((m2 - m1) * v2x + 2 * m1 * v1x) / (m1 + m2);
             } 
             else 
             {
                 // Y-axis collision
-                obj1->pos.vel_Y = -obj1->pos.vel_Y * 0.8f;
-                obj2->pos.vel_Y = -obj2->pos.vel_Y * 0.8f;
+                obj1->pos.vel_Y = ((m1 - m2) * v1y + 2 * m2 * v2y) / (m1 + m2);
+                obj2->pos.vel_Y = ((m2 - m1) * v2y + 2 * m1 * v1y) / (m1 + m2);
             }
         }
     }
