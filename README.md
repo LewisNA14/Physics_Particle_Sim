@@ -37,7 +37,10 @@ hands-on experience with engine-style architecture.
 - Mass / Force improving collisions
 
 ### Demo
+#### Early Stages of Development (Dec-Jan 2025-2026)
 ![Demo](Box_Ball_Physics_Sim_nocollision.gif)
+
+
 
 ### Planned Features
 
