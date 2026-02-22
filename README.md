@@ -34,6 +34,7 @@ hands-on experience with engine-style architecture.
 - Boundary collision handling
 - Rectangle and circle primitives
 - Basic collision response
+- Mass / Force improving collisions
 
 ### Demo
 ![Demo](Box_Ball_Physics_Sim_nocollision.gif)
@@ -41,9 +42,9 @@ hands-on experience with engine-style architecture.
 ### Planned Features
 
 - Proper circle-to-circle collision
+- Scalability of objects, e.g. 100 balls
 - Rotational dynamics and torque
 - Friction simulation
-- Spatial partitioning for performance
 - Configurable simulation parameters via UI
 
 ---
