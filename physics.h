@@ -144,7 +144,7 @@ class ObjectMovement
         height      = h;
         mass        = m;
 
-        pos.vel_X   = 200.0f;
+        pos.vel_X   = 150.0f;
         pos.vel_Y   = 0.0f;
         gravity     = 0.0981f;
 
@@ -210,8 +210,8 @@ class Collisions
             float overlapBottom = obj1->contact.bottomContact- obj2->contact.topContact;
             
             // Determine which axis has minimum overlap
-            float absOverlapX = (overlapLeft < 0) ? -overlapLeft : overlapRight;
-            float absOverlapY = (overlapTop < 0) ? -overlapTop : overlapBottom;
+            float absOverlapX = (overlapRight < -overlapLeft) ? overlapRight : -overlapLeft;
+            float absOverlapY = (overlapBottom < -overlapTop) ? overlapBottom : -overlapTop;
 
             // Resolve on the axis with least penetration using Conservation of Momentum and Kinetic Energy
             if (absOverlapX < absOverlapY) 
