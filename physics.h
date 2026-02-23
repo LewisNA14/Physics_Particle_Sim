@@ -62,15 +62,12 @@ class Circles
     // Physics Var
     float c_mass;
 
-
-    // Circle Initialise
-    Circles() 
+    Circles(float x, float y, float radius, float mass)
     {
-        circle_x        = 300.0f;
-        circle_y        = 300.0f;
-        circle_radius   = 40.0f;
-
-        c_mass = 30.0f;
+        circle_x      = x;
+        circle_y      = y;
+        circle_radius = radius;
+        c_mass        = mass;
     }
 };
 
@@ -85,20 +82,15 @@ public:
 
     float rect_mass;
 
-    Rectangles()
+    Rectangles(float x, float y, float w, float h, float mass)
     {
-        rect_x = 225;
-        rect_y = 35; 
-        rect_w = 25;
-        rect_h = 25;
-
-        rect_mass = 10;
+        rect_x    = x;
+        rect_y    = y;
+        rect_w    = w;
+        rect_h    = h;
+        rect_mass = mass;
     }
 };
-
-// Define Shape Classes
-static Rectangles* box = NULL;
-static Circles* ball = NULL;
 
 // Colour variables
 static uint8_t r = 255;
