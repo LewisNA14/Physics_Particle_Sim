@@ -238,19 +238,19 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
-    // ── Time keeping ──────────────────────────────────────────────────────
+    // Time keeping 
     uint64_t now       = SDL_GetTicks();
     float    deltaTime = (now - lastTime) / 1000.0f;
     lastTime = now;
 
-    // ── Gather all movers into a flat list for collision checks ───────────
+    // Gather all movers into a flat list for collision checks 
     std::vector<ObjectMovement*> allMovers;
     allMovers.reserve(balls.size() + boxes.size());
 
     for (auto& b : balls)  allMovers.push_back(b.mover.get());
     for (auto& b : boxes)  allMovers.push_back(b.mover.get());
 
-    // ── Physics update ────────────────────────────────────────────────────
+    // Physics update 
     for (auto* m : allMovers)
     {
         m->updatePos(deltaTime);
@@ -258,12 +258,12 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         collisionSystem->CheckBorderCollision(m);
     }
 
-    // ── N² object–object collision check ─────────────────────────────────
+    // object–object collision check 
     for (size_t i = 0; i < allMovers.size(); ++i)
         for (size_t j = i + 1; j < allMovers.size(); ++j)
             collisionSystem->CheckObjectCollision(allMovers[i], allMovers[j]);
 
-    // ── Render ────────────────────────────────────────────────────────────
+    // Render 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(renderer);
 
